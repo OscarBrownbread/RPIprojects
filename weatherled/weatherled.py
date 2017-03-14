@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2013 Jordi Castells j.castells.sala at gmail
 #
 # This program is free software: you can redistribute it and/or modify
@@ -28,10 +29,10 @@ import datetime
 
 #CONFIGURATION
 #Your Weather Underground API KEY HERE
-APIKEY  = ""
-PLACE   = "UK/Cambridge"
+APIKEY  = "" #Enter your API key that you sign up for on wunderground.com
+PLACE   = "Germany/CityName"
 
-MINPOP  = 30
+MINPOP  = 30    #Set threshold percent of rain. pop = percentage of precipitation
 LEDPIN  = 7
 BUTPIN  = 11
 
@@ -64,18 +65,18 @@ def get_pop_coming_12_hours():
     pops = [int(d["pop"]) for d in dataset["hourly_forecast"]]
     return pops[0:11]
 
-def board_clean_up():
-    GPIO.cleanup()
-
 def board_set_up():
     """Set up the Raspberry pins"""
-    board_clean_up()
+   # board_clean_up() # removing this line gets rid of "board already set up" warning.
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(LEDPIN, GPIO.OUT)
     GPIO.setup(BUTPIN, GPIO.IN)
+    print ("board is setup ...  now blinking to show setup complete")
     GPIO.add_event_detect(BUTPIN, GPIO.RISING)
-
     led_blink() #blink a couple of times indicating the setup
+
+def board_clean_up():
+    GPIO.cleanup()
 
 def script_set_up():
     """Set up the script facilities """
@@ -88,7 +89,7 @@ def led_on():
 def led_off():
     GPIO.output(LEDPIN, GPIO.LOW)
 
-def led_blink(timing=0.1):
+def led_blink(timing=0.2):
     """Blink the led 5 times"""
     led_off()
     for x in range(5):
@@ -97,7 +98,7 @@ def led_blink(timing=0.1):
         led_off()
         time.sleep(timing)
 
-def exit_handler():
+def exit_handler(): # when you press ctrl - c
     """When exiting:
         Log the exit.
         Leave the Raspberry PI in a good state
@@ -110,8 +111,8 @@ def update_weather_and_led():
     """Gets the last pop value from weather underground. With that value
     light the led or not, according to the value MINPOP
     """
-    logging.info("Retreiving weather information")
-    pop = max(get_pop_coming_12_hours())
+    logging.info("Retreiving weather information ...")
+    pop = max(get_pop_coming_12_hours())  # max of pop in next 12 hrs
 
     if pop > MINPOP:
         led_on()
@@ -121,7 +122,9 @@ def update_weather_and_led():
     logging.info("Pop: %s MinPop: %s",pop,MINPOP)
 
 def main():
+    print "main"
     script_set_up()
+    print "script is setup"
     board_set_up()
     update = True
     now = datetime.datetime.now()
@@ -130,8 +133,8 @@ def main():
     while True:
         # Update handling
         if update:
+            update = False #change update before attempting to update_weather_and_led() in case update fails
             update_weather_and_led()
-            update = False
 
         # Button Pressed handler
         if GPIO.event_detected(BUTPIN):
@@ -146,9 +149,10 @@ def main():
         # Wait for next loop
         time.sleep(0.5)
 
-if __name__=="__main__":
+if __name__=="__main__": # If run as a main program and not as an imported module or function
     try:
+        print "Trying Main function....."
         main()
     except:
+        print "EXiiittttingggg ahhhhhh module did something!"
         exit_handler()
-
